@@ -251,7 +251,7 @@ int main(void)
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_RESET);
 	}
 
-	//pump and light
+	//pump and light and dht11 commented
 	if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_SET){
 		HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_4);
 		HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_7);
