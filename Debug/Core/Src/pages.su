@@ -1,0 +1,5 @@
+../Core/Src/pages.c:34:6:components_display	144	static
+../Core/Src/pages.c:94:6:HomePage	32	static
+../Core/Src/pages.c:100:6:SetTimePage	48	static
+../Core/Src/pages.c:142:6:RecordsPage	24	static
+../Core/Src/pages.c:162:6:ImgPage	4	static
