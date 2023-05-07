@@ -44,8 +44,7 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-const uint8_t menu[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-
+const uint8_t menu[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -72,12 +71,11 @@ static void MX_RTC_Init(void);
 static void MX_ADC2_Init(void);
 /* USER CODE BEGIN PFP */
 volatile uint8_t Ov7725_vsync ;
-char time[30];
-char date[30];
-
-
+char times[30];
+char dates[30];
 RTC_TimeTypeDef sTime = {0};
 RTC_DateTypeDef sDate = {0};
+uint8_t sec=0x0, min=0x30, hr=0x22, weekday = 0x7, date=0x7, month = 0x5, year=0x23;
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -128,7 +126,7 @@ int main(void)
   LCD_INIT();
   HAL_ADCEx_Calibration_Start(&hadc1);
   HAL_TIM_Base_Start(&htim6);
-
+  TimeInitPage(sec, min, hr, weekday, date, month, year, sTime, sDate, hrtc);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -136,23 +134,19 @@ int main(void)
 
 	
 
-//  while(Ov7725_Init() != SUCCESS);
-//  Ov7725_vsync = 0;
-
 //  while( ! XPT2046_Touch_Calibrate () );
 
 	
   while (1)
   {
-//	if (Ov7725_vsync == 2 && HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13)==GPIO_PIN_SET)
-//	{
-//		FIFO_PREPARE;
-//		ImagDisp();
-//		Ov7725_vsync = 0;
-//		LCD_Rst();
-//	}
+	// RTC
+		sprintf(dates, "Date: %02d.%02d.%02d", sDate.Date, sDate.Month, sDate.Year);
+		sprintf(times, "Time: %02d.%02d.%02d", sTime.Hours, sTime.Minutes, sTime.Seconds);
 
+		LCD_DrawString(20, 20, dates);
+		LCD_DrawString(20, 40, times);
 
+	//DHT11 Sensor For Temperature and Humidity
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_6, GPIO_PIN_SET);
 	HAL_Delay(500);
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_6, GPIO_PIN_RESET);
@@ -163,22 +157,33 @@ int main(void)
 	Temp_B1 = DHT11_Read();
 	Temp_B2 = DHT11_Read();
 
+	// ADC1 for Water Level Sensor
 	HAL_ADC_Start(&hadc1);
-	HAL_ADC_Start(&hadc2);
     HAL_ADC_PollForConversion(&hadc1, 1000);
 	adc1_value = HAL_ADC_GetValue(&hadc1);
 
+	// ADC2 for LDR
+	HAL_ADC_Start(&hadc2);
     HAL_ADC_PollForConversion(&hadc2, 1000);
 	adc2_value = HAL_ADC_GetValue(&hadc2);
 
-//	while(1){
-//		XPT2046_Get_TouchedPoint(&touchpt, &strXPT2046_TouchPara);
-//		  sprintf(touch_x, "%03d", touchpt.x);
-//		  sprintf(touch_y, "%03d", touchpt.y);
-//
-//		  LCD_DrawString(200, 20, touch_x);
-//		  LCD_DrawString(200, 40, touch_y);
-//	  }
+
+
+	// Control LED light based on LDR value: Turn on if it;s dim
+	if(adc2_value <= 3500) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+
+	// PIR and LCD
+	if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_6) == GPIO_PIN_SET){
+		HAL_GPIO_WritePin(GPIOD,GPIO_PIN_12,GPIO_PIN_RESET);
+	}
+	else{
+		HAL_GPIO_WritePin(GPIOD,GPIO_PIN_12,GPIO_PIN_SET);
+	}
+
+
+
+
+
 
 	HomePage((int)Temp_B1, (int)Humidity_B1, adc2_value, adc1_value, watering_time);
 	// Touch Screen Activity -- HomePage
@@ -486,16 +491,16 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOE, GPIO_PIN_2|GPIO_PIN_6|GPIO_PIN_0|GPIO_PIN_1, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2|GPIO_PIN_3, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2|GPIO_PIN_3|LED_Pin|Pump_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_3, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13|GPIO_PIN_3, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : PE2 PE6 PE0 PE1 */
   GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_6|GPIO_PIN_0|GPIO_PIN_1;
@@ -516,12 +521,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PC13 */
-  GPIO_InitStruct.Pin = GPIO_PIN_13;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
   /*Configure GPIO pin : PC3 */
   GPIO_InitStruct.Pin = GPIO_PIN_3;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
@@ -541,8 +540,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PA4 */
-  GPIO_InitStruct.Pin = GPIO_PIN_4;
+  /*Configure GPIO pins : LED_Pin Pump_Pin */
+  GPIO_InitStruct.Pin = LED_Pin|Pump_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -576,6 +575,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PIR_Pin */
+  GPIO_InitStruct.Pin = PIR_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(PIR_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI3_IRQn, 0, 0);

@@ -29,7 +29,7 @@ Core/Src/pages.o: ../Core/Src/pages.c ../Core/Inc/pages.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rtc_ex.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h \
- ../Core/Inc/xpt2046.h
+ ../Core/Inc/xpt2046.h ../Core/Inc/bsp_ov7725.h ../Core/Inc/bsp_sccb.h
 ../Core/Inc/pages.h:
 ../Core/Inc/lcd.h:
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h:
@@ -63,3 +63,5 @@ Core/Src/pages.o: ../Core/Src/pages.c ../Core/Inc/pages.h \
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h:
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h:
 ../Core/Inc/xpt2046.h:
+../Core/Inc/bsp_ov7725.h:
+../Core/Inc/bsp_sccb.h:

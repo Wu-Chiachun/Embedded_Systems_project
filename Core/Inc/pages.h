@@ -14,8 +14,9 @@
 
 void components_display(int temp, int humidity, int luminosity, int water_level, char watering_time[][32]);
 // Pages
+void TimeInitPage(uint8_t sec, uint8_t min, uint8_t hr, uint8_t weekday, uint8_t date, uint8_t month, uint8_t year, RTC_TimeTypeDef sTime, RTC_DateTypeDef sDate, RTC_HandleTypeDef hrtc);
 void HomePage(int temp, int humidity, int luminosity, int water_level, char watering_time[][32]);
-void SetTimePage(char watering_time[][32]);
+void SetTimePage(char watering_time[][32], RTC_TimeTypeDef sTime);
 void RecordsPage();
 void ImgPage();
 
