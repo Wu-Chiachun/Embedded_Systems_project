@@ -8,7 +8,7 @@
 #include "bsp_ov7725.h"
 #include "bsp_sccb.h"
 
-volatile uint8_t Ov7725_vsync ;
+//volatile uint8_t Ov7725_vsync ;
 // - 24*32 - numbers for clock
 const uint8_t num[][96] = {
 { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x0f, 0x00, 0xf0, 0x0f, 0x00, 0xf0, 0x0f, 0x00, 0xf0, 0x0f, 0x00, 0xf0, 0x0f, 0x00, 0xf0, 0x0f, 0x00, 0xf0, 0x0f, 0x00, 0xf0, 0x0f, 0x00, 0xf0, 0x0f, 0x00, 0xf0, 0x0f, 0x00, 0xf0, 0x0f, 0x00, 0xf0, 0x0f, 0x00, 0xf0, 0x0f, 0x00, 0xf0, 0x0f, 0x00, 0xf0, 0x0f, 0x00, 0xf0, 0x0f, 0x00, 0xf0, 0x0f, 0x00, 0xf0, 0x0f, 0x00, 0xf0, 0x0f, 0x00, 0xf0, 0x0f, 0x00, 0xf0, 0x0f, 0x00, 0xf0, 0x0f, 0x00, 0xf0, 0x0f, 0x00, 0xf0, 0x0f, 0x00, 0xf0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
@@ -33,17 +33,17 @@ const uint8_t minus[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
 
 const uint8_t setting[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-void components_display(int temp, int humidity, int luminosity, int water_level, char watering_time[][32]){
+void components_display(int temp, int humidity, int luminosity, int water_level, char watering_time[][32],  uint8_t hr, uint8_t min){
 	char temperature_value_display [16], humidity_value_display [16];
 	char adc1_value_display [8], adc2_value_display [8];
 	char watering_time_display[64];
 
 	// clock
-	LCD_Draw_Num(48, 60, num[1]);
-	LCD_Draw_Num(82, 60, num[2]);
+	LCD_Draw_Num(48, 60, num[hr/10]);
+	LCD_Draw_Num(82, 60, num[hr%10]);
 	LCD_Draw_Num(108, 60, num[10]);
-	LCD_Draw_Num(134, 60, num[0]);
-	LCD_Draw_Num(168, 60, num[8]);
+	LCD_Draw_Num(134, 60, num[min/10]);
+	LCD_Draw_Num(168, 60, num[min%10]);
 
     sprintf(watering_time_display, "Next watering time: %s", watering_time[0]);
 	LCD_DrawString(30, 135, watering_time_display);
@@ -94,8 +94,16 @@ void components_display(int temp, int humidity, int luminosity, int water_level,
 }
 
 void TimeInitPage(uint8_t sec, uint8_t min, uint8_t hr, uint8_t weekday, uint8_t date, uint8_t month, uint8_t year, RTC_TimeTypeDef sTime, RTC_DateTypeDef sDate, RTC_HandleTypeDef hrtc){
-	while(1){strType_XPT2046_Coordinate touchpt;
-		LCD_DrawString(10, 15, "Initializing your local time:");
+	char x [4];
+	char y [4];
+	while(1){
+		strType_XPT2046_Coordinate touchpt;
+		XPT2046_Get_TouchedPoint(&touchpt, &strXPT2046_TouchPara);
+		sprintf(x, "%d", touchpt.x);
+		sprintf(y, "%d", touchpt.y);
+		LCD_DrawString(10, 150, x);
+		LCD_DrawString(10, 175, y);
+		LCD_DrawString(10, 15, "Initializing your local time");
 		LCD_DrawString(10, 30, "Year:");
 		LCD_DrawString(10, 45, "Month:");
 		LCD_DrawString(10, 60, "Date:");
@@ -119,18 +127,21 @@ void TimeInitPage(uint8_t sec, uint8_t min, uint8_t hr, uint8_t weekday, uint8_t
 			HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR3, (uint16_t)sDate.Month);
 			HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR4, (uint16_t)sDate.Date);
 			HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR5, (uint16_t)sDate.WeekDay);
+			LCD_Clear(0, 0, 240, 320, WHITE);
 			break;
 		}
 	}
+	LCD_DrawString(20, 80, "Exit While Loop!");
 }
 
-void HomePage(int temp, int humidity, int luminosity, int water_level, char watering_time[][32]){
+void HomePage(int temp, int humidity, int luminosity, int water_level, char watering_time[][32],  RTC_TimeTypeDef sTime, RTC_DateTypeDef sDate, RTC_HandleTypeDef hrtc){
+	HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
 	LCD_Draw_24sqr(10, 10, setting);
-	components_display(temp, humidity, luminosity, water_level, watering_time);
+	components_display(temp, humidity, luminosity, water_level, watering_time, sTime.Hours, sTime.Minutes);
 	LCD_DrawLine(0, 152, 240, 152, 0x0);
 }
 
-void SetTimePage(char watering_time[][32], RTC_TimeTypeDef sTime){
+void SetTimePage(char watering_time[][32]){
 //	Setting Watering time
 	strType_XPT2046_Coordinate touchpt;
 	char touch_x[4], touch_y[4];
@@ -170,8 +181,6 @@ void SetTimePage(char watering_time[][32], RTC_TimeTypeDef sTime){
 			}
 		    LCD_Clear(0, 0, 240, 320, 0xffff);
 			sprintf(watering_time, "%d%d:%d%d", hr/10, hr%10, min/10, min%10);
-			sTime.Hours = hr;
-			sTime.Minutes = min;
 }
 
 void RecordsPage(){
@@ -193,7 +202,7 @@ void RecordsPage(){
 }
 
 
-void ImgPage(){
+void ImgPage(uint8_t Ov7725_vsync){
 	strType_XPT2046_Coordinate touchpt;
 	while(Ov7725_Init() != SUCCESS);
 	Ov7725_vsync = 0;

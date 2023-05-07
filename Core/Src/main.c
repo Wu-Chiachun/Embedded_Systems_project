@@ -75,7 +75,7 @@ char times[30];
 char dates[30];
 RTC_TimeTypeDef sTime = {0};
 RTC_DateTypeDef sDate = {0};
-uint8_t sec=0x0, min=0x30, hr=0x22, weekday = 0x7, date=0x7, month = 0x5, year=0x23;
+uint8_t sec=0x0, min=0x30, hr=0x22, weekday = 0x07, date=0x07, month = 0x05, year=0x23;
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -140,6 +140,10 @@ int main(void)
   while (1)
   {
 	// RTC
+	  	HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+	  	HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+
+
 		sprintf(dates, "Date: %02d.%02d.%02d", sDate.Date, sDate.Month, sDate.Year);
 		sprintf(times, "Time: %02d.%02d.%02d", sTime.Hours, sTime.Minutes, sTime.Seconds);
 
@@ -171,6 +175,7 @@ int main(void)
 
 	// Control LED light based on LDR value: Turn on if it;s dim
 	if(adc2_value <= 3500) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+	else HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
 
 	// PIR and LCD
 	if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_6) == GPIO_PIN_SET){
@@ -185,7 +190,7 @@ int main(void)
 
 
 
-	HomePage((int)Temp_B1, (int)Humidity_B1, adc2_value, adc1_value, watering_time);
+	HomePage((int)Temp_B1, (int)Humidity_B1, adc2_value, adc1_value, watering_time, sTime, sDate, hrtc);
 	// Touch Screen Activity -- HomePage
 	if(XPT2046_Get_TouchedPoint(&touchpt, &strXPT2046_TouchPara) && touchpt.x >= 290 && touchpt.y<=60){
 		LCD_Clear(0, 0, 240, 320, 0xffff);
@@ -208,7 +213,7 @@ int main(void)
 				break;
 			}
 			else if(touchpt.x >= 40 && touchpt.x <=80 && touchpt.y >= 40 && touchpt.y <=180){
-				ImgPage();
+				ImgPage(Ov7725_vsync);
 				break;
 			}
 //			else{
@@ -384,7 +389,8 @@ static void MX_RTC_Init(void)
 {
 
   /* USER CODE BEGIN RTC_Init 0 */
-
+  RTC_TimeTypeDef sTime_buffer;
+  RTC_DateTypeDef DateToUpdate_buffer;
   /* USER CODE END RTC_Init 0 */
 
   RTC_TimeTypeDef sTime = {0};
@@ -405,7 +411,7 @@ static void MX_RTC_Init(void)
   }
 
   /* USER CODE BEGIN Check_RTC_BKUP */
-
+  if(HAL_RTCEx_BKUPRead(&hrtc, RTC_BKP_DR1) != 0x5432){
   /* USER CODE END Check_RTC_BKUP */
 
   /** Initialize RTC and set the Time and Date
@@ -428,7 +434,23 @@ static void MX_RTC_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN RTC_Init 2 */
-
+	__HAL_RTC_SECOND_ENABLE_IT(&hrtc, RTC_IT_SEC);
+	DateToUpdate_buffer = DateToUpdate;
+	HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR1, 0x5432);
+	HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR2, (uint16_t)DateToUpdate_buffer.Year);
+	HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR3, (uint16_t)DateToUpdate_buffer.Month);
+	HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR4, (uint16_t)DateToUpdate_buffer.Date);
+	HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR5, (uint16_t)DateToUpdate_buffer.WeekDay);
+}
+else{
+	DateToUpdate_buffer.Year = HAL_RTCEx_BKUPRead(&hrtc, RTC_BKP_DR2);
+	DateToUpdate_buffer.Month = HAL_RTCEx_BKUPRead(&hrtc, RTC_BKP_DR3);
+	DateToUpdate_buffer.Date = HAL_RTCEx_BKUPRead(&hrtc, RTC_BKP_DR4);
+	DateToUpdate_buffer.WeekDay = HAL_RTCEx_BKUPRead(&hrtc, RTC_BKP_DR5);
+	DateToUpdate = DateToUpdate_buffer;
+	HAL_RTC_SetDate(&hrtc, &DateToUpdate, RTC_FORMAT_BCD);
+	__HAL_RTC_SECOND_ENABLE_IT(&hrtc, RTC_IT_SEC);
+}
   /* USER CODE END RTC_Init 2 */
 
 }
