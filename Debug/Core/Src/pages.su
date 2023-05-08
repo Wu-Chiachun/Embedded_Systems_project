@@ -1,6 +1,6 @@
-../Core/Src/pages.c:36:6:components_display	144	static
-../Core/Src/pages.c:96:6:TimeInitPage	32	static
-../Core/Src/pages.c:127:6:HomePage	32	static
-../Core/Src/pages.c:133:6:SetTimePage	48	static
-../Core/Src/pages.c:175:6:RecordsPage	24	static
-../Core/Src/pages.c:194:6:ImgPage	16	static
+../Core/Src/pages.c:37:6:components_display	128	static
+../Core/Src/pages.c:97:6:TimeInitPage	40	static
+../Core/Src/pages.c:152:6:HomePage	40	static
+../Core/Src/pages.c:159:6:SetTimePage	48	static
+../Core/Src/pages.c:220:6:RecordsPage	56	static
+../Core/Src/pages.c:260:6:ImgPage	32	static

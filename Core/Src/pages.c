@@ -7,6 +7,7 @@
 #include "pages.h"
 #include "bsp_ov7725.h"
 #include "bsp_sccb.h"
+#include "string.h"
 
 //volatile uint8_t Ov7725_vsync ;
 // - 24*32 - numbers for clock
@@ -28,15 +29,15 @@ const uint8_t num[][96] = {
 const uint8_t dew[] = { 0x00, 0xc0, 0x07, 0x00, 0x70, 0x02, 0x00, 0x18, 0x01, 0x00, 0x8c, 0x01, 0x00, 0x86, 0x00, 0x00, 0x83, 0x00, 0x80, 0x01, 0x01, 0x80, 0x00, 0x02, 0xc0, 0x60, 0x02, 0x60, 0x60, 0x06, 0x20, 0x00, 0x0c, 0x30, 0x80, 0x19, 0x10, 0x00, 0x1b, 0x18, 0x00, 0x12, 0x08, 0x00, 0x12, 0x08, 0x00, 0x12, 0x18, 0x00, 0x1b, 0x18, 0x00, 0x18, 0x38, 0x00, 0x0c, 0x70, 0x00, 0x0e, 0xf0, 0x00, 0x07, 0xe0, 0x01, 0x03, 0xc0, 0xff, 0x03, 0x80, 0xff, 0x01};
 const uint8_t temperature[] = { 0x00, 0x3c, 0x00, 0x00, 0x24, 0x00, 0x00, 0x66, 0x00, 0x00, 0x42, 0x00, 0x00, 0x7a, 0x00, 0x00, 0x4a, 0x00, 0x00, 0x7a, 0x00, 0x00, 0x4a, 0x00, 0x00, 0x7a, 0x00, 0x00, 0x4a, 0x00, 0x00, 0x7a, 0x00, 0x00, 0x4a, 0x00, 0x00, 0x7a, 0x00, 0x00, 0x4a, 0x00, 0x00, 0x7a, 0x00, 0x00, 0x4a, 0x00, 0x00, 0x4a, 0x00, 0x00, 0xcb, 0x00, 0x80, 0x99, 0x01, 0x80, 0x3c, 0x01, 0x80, 0x3c, 0x01, 0x80, 0x98, 0x01, 0x00, 0xc3, 0x00, 0x00, 0x3e, 0x00};
 const uint8_t light[] = { 0x00, 0x18, 0x00, 0x00, 0x18, 0x00, 0x0c, 0x18, 0x30, 0x1c, 0x18, 0x38, 0x38, 0x00, 0x1c, 0x70, 0x7e, 0x0e, 0x20, 0xc3, 0x04, 0x80, 0x81, 0x01, 0xc0, 0x00, 0x03, 0x60, 0x00, 0x06, 0x20, 0x00, 0x04, 0x2f, 0x00, 0xf4, 0x2f, 0x00, 0xf4, 0x20, 0x00, 0x04, 0x60, 0x00, 0x06, 0xc0, 0x00, 0x03, 0x80, 0x81, 0x01, 0x20, 0x83, 0x04, 0x70, 0x7e, 0x0e, 0x38, 0x00, 0x1c, 0x1c, 0x18, 0x38, 0x0c, 0x18, 0x30, 0x00, 0x18, 0x00, 0x00, 0x18, 0x00};
-const uint8_t plus[] = { 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00};
-const uint8_t minus[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-
+//const uint8_t plus[] = { 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x3c, 0x00};
+//const uint8_t minus[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+const uint8_t plant [] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0f, 0x00, 0xc0, 0x1f, 0xf0, 0xe0, 0x3f, 0xf8, 0xe3, 0x3f, 0xfc, 0xf7, 0x7f, 0xfc, 0xf7, 0x78, 0x1c, 0x18, 0x70, 0x04, 0x08, 0x40, 0x00, 0x08, 0x00, 0x00, 0x08, 0x00, 0xf0, 0xff, 0x0f, 0xf0, 0x80, 0x0d, 0xf0, 0xff, 0x0f, 0xe0, 0xff, 0x07, 0xc0, 0xff, 0x03, 0x80, 0xff, 0x01, 0x80, 0xff, 0x01, 0x80, 0xff, 0x01, 0x80, 0xff, 0x01, 0x80, 0xff, 0x01, 0xc0, 0xff, 0x03};
 const uint8_t setting[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-void components_display(int temp, int humidity, int luminosity, int water_level, char watering_time[][32],  uint8_t hr, uint8_t min){
+void components_display(int temp, int humidity, int luminosity, int water_level, char watering_time[],  uint8_t hr, uint8_t min){
 	char temperature_value_display [16], humidity_value_display [16];
 	char adc1_value_display [8], adc2_value_display [8];
-	char watering_time_display[64];
+	char watering_time_display[48];
 
 	// clock
 	LCD_Draw_Num(48, 60, num[hr/10]);
@@ -45,7 +46,7 @@ void components_display(int temp, int humidity, int luminosity, int water_level,
 	LCD_Draw_Num(134, 60, num[min/10]);
 	LCD_Draw_Num(168, 60, num[min%10]);
 
-    sprintf(watering_time_display, "Next watering time: %s", watering_time[0]);
+    sprintf(watering_time_display, "Next watering time: %s", watering_time);
 	LCD_DrawString(30, 135, watering_time_display);
 
 	//DHT11 Temperature Value and Display
@@ -81,74 +82,88 @@ void components_display(int temp, int humidity, int luminosity, int water_level,
 
     // water level of the tank
     LCD_Clear (145, 210, 70, 50, 0xffff);
-	sprintf(adc1_value_display, "%d", water_level);
+//	sprintf(adc1_value_display, "%d", water_level);
 	LCD_Clear(140, 160, 100, 20, 0xffff);
 	water_level *= 0.02;
-	LCD_DrawString(140, 160, adc1_value_display);
+//	LCD_DrawString(140, 160, adc1_value_display);
 	LCD_Clear(140, 180, 100, 20, 0xffff);
 	LCD_DrawString(140, 180, "Water level");
     LCD_DrawLine(140, 206, 140, 266, 0x0);
     LCD_DrawLine(220, 206, 220, 266, 0x0);
 	LCD_DrawLine(140, 266, 220, 266, 0x0);
-	LCD_Clear (145, 210, 70, water_level, 0x001f);
+	LCD_Clear (145, 265 - water_level, 70, water_level, 0x001f);
 }
 
 void TimeInitPage(uint8_t sec, uint8_t min, uint8_t hr, uint8_t weekday, uint8_t date, uint8_t month, uint8_t year, RTC_TimeTypeDef sTime, RTC_DateTypeDef sDate, RTC_HandleTypeDef hrtc){
-	char x [4];
-	char y [4];
+	LCD_DrawString(10, 15, "Initializing your local time");
+//		LCD_DrawString(10, 45, "Year:");
+//		LCD_DrawString(10, 75, "Month:");
+//		LCD_DrawString(10, 105, "Date:");
+//		LCD_Clear(0, 0, 240, 320, 0xffff);
+	LCD_Draw_Num(48, 80, num[0]);
+	LCD_Draw_Num(82, 80, num[0]);
+	LCD_Draw_Num(108, 80, num[10]);
+	LCD_Draw_Num(134, 80, num[0]);
+	LCD_Draw_Num(168, 80, num[0]);
+	LCD_DrawLine(0, 135, 240, 135, 0x0);
+	LCD_Draw_24sqr(108, 225, plant);
+	LCD_DrawString(108, 260, "SET");
+	LCD_DrawString(50, 280, "Press K1 to Start");
 	while(1){
 		strType_XPT2046_Coordinate touchpt;
 		XPT2046_Get_TouchedPoint(&touchpt, &strXPT2046_TouchPara);
-		sprintf(x, "%d", touchpt.x);
-		sprintf(y, "%d", touchpt.y);
-		LCD_DrawString(10, 150, x);
-		LCD_DrawString(10, 175, y);
-		LCD_DrawString(10, 15, "Initializing your local time");
-		LCD_DrawString(10, 30, "Year:");
-		LCD_DrawString(10, 45, "Month:");
-		LCD_DrawString(10, 60, "Date:");
-		LCD_DrawString(10, 75, "Hour:");
-		LCD_DrawString(10, 90, "Minute:");
+//		sprintf(x, "%d", touchpt.x);
+//		sprintf(y, "%d", touchpt.y);
+//		LCD_DrawString(10, 150, x);
+//		LCD_DrawString(10, 175, y);
 
-		LCD_DrawString(10, 200, "Press Key 1 to Set the time and Go to Home Page!");
-		if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0)==GPIO_PIN_SET){
-			sTime.Hours = hr;
-			sTime.Minutes = min;
-			sTime.Seconds = sec;
-
-			sDate.WeekDay = weekday;
-			sDate.Date = date;
-			sDate.Month = month;
-			sDate.Year = year;
-			HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD);
-			HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD);
-			HAL_Delay(500);
-			HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR2, (uint16_t)sDate.Year);
-			HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR3, (uint16_t)sDate.Month);
-			HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR4, (uint16_t)sDate.Date);
-			HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR5, (uint16_t)sDate.WeekDay);
-			LCD_Clear(0, 0, 240, 320, WHITE);
-			break;
+		XPT2046_Get_TouchedPoint(&touchpt, &strXPT2046_TouchPara);
+		if(touchpt.x <= 270 && touchpt.x >= 235 && touchpt.y <= 120 && touchpt.y >= 60) hr += 1;
+		else if (touchpt.x <= 270 && touchpt.x >= 235 && touchpt.y <= 190 && touchpt.y >= 135) min += 1;
+		if(hr == 24) hr = 0;
+		if(min == 60) min = 0;
+		LCD_Draw_Num(48, 80, num[hr/10]);
+		LCD_Draw_Num(82, 80, num[hr%10]);
+		LCD_Draw_Num(108, 80, num[10]);
+		LCD_Draw_Num(134, 80, num[min/10]);
+		LCD_Draw_Num(168, 80, num[min%10]);
+		HAL_Delay(200);
+	    if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0)==GPIO_PIN_SET){
+		sTime.Hours = (hr/10)*16 + (hr%10);
+		sTime.Minutes = (min/10)*16 + (min%10);
+//		sTime.Seconds = sec;
+//		sDate.WeekDay = weekday;
+//		sDate.Date = date;
+//		sDate.Month = month;
+		sDate.Year = year;
+		HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD);
+		HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD);
+//		HAL_Delay(500);
+//		HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR2, (uint16_t)sDate.Year);
+//		HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR3, (uint16_t)sDate.Month);
+//		HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR4, (uint16_t)sDate.Date);
+//		HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR5, (uint16_t)sDate.WeekDay);
+		LCD_Clear(0, 0, 240, 320, WHITE);
+		break;
 		}
 	}
-	LCD_DrawString(20, 80, "Exit While Loop!");
 }
 
-void HomePage(int temp, int humidity, int luminosity, int water_level, char watering_time[][32],  RTC_TimeTypeDef sTime, RTC_DateTypeDef sDate, RTC_HandleTypeDef hrtc){
+void HomePage(int temp, int humidity, int luminosity, int water_level, char watering_time[],  RTC_TimeTypeDef sTime, RTC_DateTypeDef sDate, RTC_HandleTypeDef hrtc){
 	HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
 	LCD_Draw_24sqr(10, 10, setting);
 	components_display(temp, humidity, luminosity, water_level, watering_time, sTime.Hours, sTime.Minutes);
 	LCD_DrawLine(0, 152, 240, 152, 0x0);
 }
 
-void SetTimePage(char watering_time[][32]){
+void SetTimePage(char watering_time[], char watering_time2[]){
 //	Setting Watering time
 	strType_XPT2046_Coordinate touchpt;
 	char touch_x[4], touch_y[4];
-	uint8_t hr = 0, min = 0;
+	uint8_t hr = 0, min = 0, hr2 = 0, min2 = 0;
 	LCD_Clear(0, 0, 240, 320, 0xffff);
-	LCD_Draw_24sqr(10, 10, setting);
-	LCD_DrawString(40, 50, "Set the watering time:");
+	LCD_DrawString(10, 10, "Home");
+	LCD_DrawString(20, 50, "Set the 1st watering time:");
 	LCD_Draw_Num(48, 80, num[0]);
 	LCD_Draw_Num(82, 80, num[0]);
 	LCD_Draw_Num(108, 80, num[10]);
@@ -157,6 +172,14 @@ void SetTimePage(char watering_time[][32]){
 
 	LCD_DrawLine(0, 135, 240, 135, 0x0);
 
+	LCD_DrawString(20, 155, "Set the 2nd watering time:");
+	LCD_Draw_Num(48,185, num[0]);
+	LCD_Draw_Num(82, 185, num[0]);
+	LCD_Draw_Num(108, 185, num[10]);
+	LCD_Draw_Num(134, 185, num[0]);
+	LCD_Draw_Num(168, 185, num[0]);
+
+	LCD_DrawString(108, 280, "SET");
 			while(1){
 			  XPT2046_Get_TouchedPoint(&touchpt, &strXPT2046_TouchPara);
 			  if(touchpt.x <= 270 && touchpt.x >= 235 && touchpt.y <= 120 && touchpt.y >= 60) hr += 1;
@@ -168,30 +191,62 @@ void SetTimePage(char watering_time[][32]){
 			  LCD_Draw_Num(108, 80, num[10]);
 			  LCD_Draw_Num(134, 80, num[min/10]);
 			  LCD_Draw_Num(168, 80, num[min%10]);
-			  HAL_Delay(200);
-	//		  LCD_Clear(48, 60, 192, 92, 0xffff);
+			  HAL_Delay(100);
 
-	//		  LCD_Clear(20, 200, 220, 20, 0xffff);
+			  if(touchpt.x <= 130 && touchpt.x >= 115 && touchpt.y <= 85 && touchpt.y >= 60) hr2 += 1;
+			  else if (touchpt.x <= 90 && touchpt.x >= 65 && touchpt.y <= 180 && touchpt.y >= 145) min2 += 1;
+			  if(hr2 == 24) hr2 = 0;
+			  if(min2 == 60) min2 = 0;
+			  LCD_Draw_Num(48, 185, num[hr2/10]);
+			  LCD_Draw_Num(82, 185, num[hr2%10]);
+			  LCD_Draw_Num(108, 185, num[10]);
+			  LCD_Draw_Num(134, 185, num[min2/10]);
+			  LCD_Draw_Num(168, 185, num[min2%10]);
+			  HAL_Delay(100);
+
 			  XPT2046_Get_TouchedPoint(&touchpt, &strXPT2046_TouchPara);
 			  if(touchpt.x >= 290 && touchpt.y<=80) break;
-			  sprintf(touch_x, "%03d", touchpt.x);
-			  sprintf(touch_y, "%03d", touchpt.y);
-			  LCD_DrawString(20, 200, touch_x);
-			  LCD_DrawString(200, 200, touch_y);
+//			  sprintf(touch_x, "%03d", touchpt.x);
+//			  sprintf(touch_y, "%03d", touchpt.y);
+//			  LCD_DrawString(20, 200, touch_x);
+//			  LCD_DrawString(200, 200, touch_y);
 			}
 		    LCD_Clear(0, 0, 240, 320, 0xffff);
 			sprintf(watering_time, "%d%d:%d%d", hr/10, hr%10, min/10, min%10);
+			sprintf(watering_time2, "%d%d:%d%d", hr2/10, hr2%10, min2/10, min2%10);
+	LCD_Clear(0, 0, 240, 320, 0xffff);
 }
 
-void RecordsPage(){
+void RecordsPage(char records[10][3][8], uint8_t count){
 	strType_XPT2046_Coordinate touchpt;
 	LCD_Clear(0, 0, 240, 320, 0xffff);
-	LCD_Draw_24sqr(10, 10, setting);
-	LCD_Draw_24sqr(120, 10, temperature);
-	LCD_Draw_24sqr(200, 10, dew);
-	LCD_DrawLine(50, 40 ,200, 40, 0x0);
-	LCD_DrawLine(75, 10 ,75, 300, 0x0);
-	LCD_DrawLine(125, 10 ,125, 300, 0x0);
+	LCD_DrawString(10, 10, "Home");
+	LCD_DrawLine(0, 30 ,240, 30, 0x0);
+
+	LCD_DrawLine(20, 50 ,220, 50, 0x0);
+	LCD_DrawLine(20, 300,220, 300, 0x0);
+
+	LCD_DrawString(21, 52, "Time:");
+    LCD_Draw_24sqr(101, 52, temperature);
+	LCD_Draw_24sqr(161, 52, dew);
+	LCD_DrawLine(20, 80, 220, 80, 0);
+
+	LCD_DrawLine(100, 50 ,100, 300, 0x0);
+	LCD_DrawLine(160, 50 ,160, 300, 0x0);
+	LCD_DrawLine(20, 50 ,20, 300, 0x0);
+	LCD_DrawLine(220, 50 ,220, 300, 0x0);
+
+	uint8_t i = 0, l = count;
+	char p [8], t[8], h[8];
+	if(count>=10) l = 10;
+	for(i = 0; i<l; i++){
+		strcpy(p, records[i][0]);
+		LCD_DrawString(21, 81+20*i, p);
+		strcpy(t, records[i][1]);
+		LCD_DrawString(101, 81+20*i, t);
+		strcpy(h, records[i][2]);
+		LCD_DrawString(161, 81+20*i, h);
+	}
 
 	while(1){
 	  XPT2046_Get_TouchedPoint(&touchpt, &strXPT2046_TouchPara);
@@ -204,17 +259,19 @@ void RecordsPage(){
 
 void ImgPage(uint8_t Ov7725_vsync){
 	strType_XPT2046_Coordinate touchpt;
-	while(Ov7725_Init() != SUCCESS);
-	Ov7725_vsync = 0;
-	if (Ov7725_vsync == 2 && HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13)==GPIO_PIN_SET)
-		{
-			FIFO_PREPARE;
-			ImagDisp();
-			Ov7725_vsync = 0;
-			LCD_Rst();
-    }
+	LCD_DrawString(10, 10, "ewfbiuewbgiuw");
 	while(1){
 	  XPT2046_Get_TouchedPoint(&touchpt, &strXPT2046_TouchPara);
 	  if(touchpt.x >= 290 && touchpt.y<=80) break;
+		if (Ov7725_vsync == 2)
+			{
+				FIFO_PREPARE;
+				ImagDisp();
+				Ov7725_vsync = 0;
+				HAL_Delay(2000);
+				LCD_INIT();
+				LCD_DrawString(10, 10, "Home");
+	    }
 	}
+	LCD_Clear(0, 0, 240, 320, 0xffff);
 }

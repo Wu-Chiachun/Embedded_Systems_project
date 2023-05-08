@@ -28,6 +28,7 @@
 #include "dht11.h"
 #include "xpt2046.h"
 #include "pages.h"
+#include "string.h"
 
 
 
@@ -75,7 +76,7 @@ char times[30];
 char dates[30];
 RTC_TimeTypeDef sTime = {0};
 RTC_DateTypeDef sDate = {0};
-uint8_t sec=0x0, min=0x30, hr=0x22, weekday = 0x07, date=0x07, month = 0x05, year=0x23;
+uint8_t sec=0, min=0, hr=0, weekday = 0, date=0, month = 0, year=0;
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -91,8 +92,13 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
   int32_t adc1_value = 0, adc2_value = 0;
-  char watering_time [2][32] = {{"00:00"},{"00:00"}};
+  char watering_time_1 [] = {"00:00"};
+  char watering_time_2 [] = {"00:00"};
+  char watering_time [] = {"00:00"};
+  char records [10][3][8] = {{"time", "temperature", "humidity"}};
+  uint8_t records_count = 0;
   uint8_t Humidity_B1, Humidity_B2, Temp_B1, Temp_B2;
+  char temp_r [8] = {0}, humid_r [8] = {0};
   strType_XPT2046_Coordinate touchpt;
   char touch_x[4], touch_y[4];
 
@@ -126,7 +132,9 @@ int main(void)
   LCD_INIT();
   HAL_ADCEx_Calibration_Start(&hadc1);
   HAL_TIM_Base_Start(&htim6);
+  while(Ov7725_Init() != SUCCESS);
   TimeInitPage(sec, min, hr, weekday, date, month, year, sTime, sDate, hrtc);
+  Ov7725_vsync = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -140,15 +148,21 @@ int main(void)
   while (1)
   {
 	// RTC
-	  	HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
-	  	HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+	HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+	if(sTime.Hours == (watering_time_1[0]-48)*10+(watering_time_1[1]-48)){
+		if(sTime.Minutes > (watering_time_1[3]-48)*10+(watering_time_1[4]-48) && sTime.Minutes <= (watering_time_2[3]-48)*10+(watering_time_2[4]-48))
+			strcpy(watering_time, watering_time_2);
+		else
+			strcpy(watering_time, watering_time_1);
+	}
+	else if(sTime.Hours > (watering_time_1[0]-48)*10+(watering_time_1[1]-48) && sTime.Hours <= (watering_time_2[0]-48)*10+(watering_time_2[1]-48)){
+		if(sTime.Minutes > (watering_time_2[3]-48)*10+(watering_time_2[4]-48))
+			strcpy(watering_time, watering_time_1);
+		else
+			strcpy(watering_time, watering_time_2);
+	}
+	else strcpy(watering_time, watering_time_1);
 
-
-		sprintf(dates, "Date: %02d.%02d.%02d", sDate.Date, sDate.Month, sDate.Year);
-		sprintf(times, "Time: %02d.%02d.%02d", sTime.Hours, sTime.Minutes, sTime.Seconds);
-
-		LCD_DrawString(20, 20, dates);
-		LCD_DrawString(20, 40, times);
 
 	//DHT11 Sensor For Temperature and Humidity
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_6, GPIO_PIN_SET);
@@ -173,8 +187,8 @@ int main(void)
 
 
 
-	// Control LED light based on LDR value: Turn on if it;s dim
-	if(adc2_value <= 3500) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+	// Control LED light based on LDR value: Turn on if it's dim
+	if(adc2_value <= 2800) HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
 	else HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
 
 	// PIR and LCD
@@ -188,9 +202,29 @@ int main(void)
 
 
 
+	// Records During Watering => delay 1 minutes
+	if(sTime.Hours == (watering_time[0]-48)*10+(watering_time[1]-48) && sTime.Minutes == (watering_time[3]-48)*10+(watering_time[4]-48) && strcmp(watering_time_1, watering_time_2)!=0){
+	  LCD_Clear (50, 80, 140, 70, GREEN);
+	  LCD_DrawString(75, 100, "Watering");
+	  strcpy(records[records_count%10][0], watering_time);
+	  sprintf(temp_r, "%d", (int)Temp_B1);
+	  sprintf(humid_r, "%d", (int)Humidity_B1);
+	  strcpy(records[records_count%10][1], temp_r);
+	  strcpy(records[records_count%10][2], humid_r);
+	  records_count += 1;
 
+	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET);
+	  HAL_Delay(10000);
+	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_RESET);
+	  HAL_Delay(50000);
+	  LCD_Clear (50, 80, 140, 70, WHITE);
+	}
 
 	HomePage((int)Temp_B1, (int)Humidity_B1, adc2_value, adc1_value, watering_time, sTime, sDate, hrtc);
+
+	//	LCD_DrawString(10, 280, watering_time_1);
+//	LCD_DrawString(10, 300, watering_time_2);
+
 	// Touch Screen Activity -- HomePage
 	if(XPT2046_Get_TouchedPoint(&touchpt, &strXPT2046_TouchPara) && touchpt.x >= 290 && touchpt.y<=60){
 		LCD_Clear(0, 0, 240, 320, 0xffff);
@@ -205,21 +239,17 @@ int main(void)
 			touchpt.y = 0;
 			XPT2046_Get_TouchedPoint(&touchpt, &strXPT2046_TouchPara);
 			if(touchpt.x >= 170 && touchpt.x <=240 && touchpt.y >= 50 && touchpt.y <=200) {
-				SetTimePage(watering_time);
+				SetTimePage(watering_time_1, watering_time_2);
 				break;
 			}
 			else if(touchpt.x >= 60 && touchpt.x <=120 && touchpt.y >= 40 && touchpt.y <=180) {
-				RecordsPage();
+				RecordsPage(records, records_count);
 				break;
 			}
 			else if(touchpt.x >= 40 && touchpt.x <=80 && touchpt.y >= 40 && touchpt.y <=180){
 				ImgPage(Ov7725_vsync);
 				break;
 			}
-//			else{
-//				HomePage(Temp_B1, Humidity_B1, adc2_value, adc1_value, watering_time);
-//				break;
-//			}
 		}
 
 	}

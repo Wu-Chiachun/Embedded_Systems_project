@@ -255,6 +255,7 @@ void LCD_FillColor ( uint32_t usPoint, uint16_t usColor )
 
 
 
+
 void LCD_Clear ( uint16_t usCOLUMN, uint16_t usPAGE, uint16_t usWidth, uint16_t usHeight, uint16_t usColor )
 {
 	LCD_OpenWindow ( usCOLUMN, usPAGE, usWidth, usHeight );
